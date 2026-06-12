@@ -9,38 +9,155 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as WeatherRouteImport } from './routes/weather'
+import { Route as SkyRouteImport } from './routes/sky'
+import { Route as EventsRouteImport } from './routes/events'
+import { Route as DashboardRouteImport } from './routes/dashboard'
+import { Route as AiRouteImport } from './routes/ai'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as SatelliteIdRouteImport } from './routes/satellite.$id'
 
+const WeatherRoute = WeatherRouteImport.update({
+  id: '/weather',
+  path: '/weather',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SkyRoute = SkyRouteImport.update({
+  id: '/sky',
+  path: '/sky',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EventsRoute = EventsRouteImport.update({
+  id: '/events',
+  path: '/events',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardRoute = DashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AiRoute = AiRouteImport.update({
+  id: '/ai',
+  path: '/ai',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SatelliteIdRoute = SatelliteIdRouteImport.update({
+  id: '/satellite/$id',
+  path: '/satellite/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/ai': typeof AiRoute
+  '/dashboard': typeof DashboardRoute
+  '/events': typeof EventsRoute
+  '/sky': typeof SkyRoute
+  '/weather': typeof WeatherRoute
+  '/satellite/$id': typeof SatelliteIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/ai': typeof AiRoute
+  '/dashboard': typeof DashboardRoute
+  '/events': typeof EventsRoute
+  '/sky': typeof SkyRoute
+  '/weather': typeof WeatherRoute
+  '/satellite/$id': typeof SatelliteIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/ai': typeof AiRoute
+  '/dashboard': typeof DashboardRoute
+  '/events': typeof EventsRoute
+  '/sky': typeof SkyRoute
+  '/weather': typeof WeatherRoute
+  '/satellite/$id': typeof SatelliteIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/ai'
+    | '/dashboard'
+    | '/events'
+    | '/sky'
+    | '/weather'
+    | '/satellite/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/ai'
+    | '/dashboard'
+    | '/events'
+    | '/sky'
+    | '/weather'
+    | '/satellite/$id'
+  id:
+    | '__root__'
+    | '/'
+    | '/ai'
+    | '/dashboard'
+    | '/events'
+    | '/sky'
+    | '/weather'
+    | '/satellite/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AiRoute: typeof AiRoute
+  DashboardRoute: typeof DashboardRoute
+  EventsRoute: typeof EventsRoute
+  SkyRoute: typeof SkyRoute
+  WeatherRoute: typeof WeatherRoute
+  SatelliteIdRoute: typeof SatelliteIdRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/weather': {
+      id: '/weather'
+      path: '/weather'
+      fullPath: '/weather'
+      preLoaderRoute: typeof WeatherRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sky': {
+      id: '/sky'
+      path: '/sky'
+      fullPath: '/sky'
+      preLoaderRoute: typeof SkyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/events': {
+      id: '/events'
+      path: '/events'
+      fullPath: '/events'
+      preLoaderRoute: typeof EventsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard': {
+      id: '/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof DashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ai': {
+      id: '/ai'
+      path: '/ai'
+      fullPath: '/ai'
+      preLoaderRoute: typeof AiRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,22 +165,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/satellite/$id': {
+      id: '/satellite/$id'
+      path: '/satellite/$id'
+      fullPath: '/satellite/$id'
+      preLoaderRoute: typeof SatelliteIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AiRoute: AiRoute,
+  DashboardRoute: DashboardRoute,
+  EventsRoute: EventsRoute,
+  SkyRoute: SkyRoute,
+  WeatherRoute: WeatherRoute,
+  SatelliteIdRoute: SatelliteIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
