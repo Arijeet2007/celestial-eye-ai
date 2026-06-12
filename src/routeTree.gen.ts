@@ -15,6 +15,7 @@ import { Route as EventsRouteImport } from './routes/events'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as AiRouteImport } from './routes/ai'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as SatelliteIdRouteImport } from './routes/satellite.$id'
 
 const WeatherRoute = WeatherRouteImport.update({
   id: '/weather',
@@ -46,6 +47,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SatelliteIdRoute = SatelliteIdRouteImport.update({
+  id: '/satellite/$id',
+  path: '/satellite/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -54,6 +60,7 @@ export interface FileRoutesByFullPath {
   '/events': typeof EventsRoute
   '/sky': typeof SkyRoute
   '/weather': typeof WeatherRoute
+  '/satellite/$id': typeof SatelliteIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -62,6 +69,7 @@ export interface FileRoutesByTo {
   '/events': typeof EventsRoute
   '/sky': typeof SkyRoute
   '/weather': typeof WeatherRoute
+  '/satellite/$id': typeof SatelliteIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -71,13 +79,36 @@ export interface FileRoutesById {
   '/events': typeof EventsRoute
   '/sky': typeof SkyRoute
   '/weather': typeof WeatherRoute
+  '/satellite/$id': typeof SatelliteIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/ai' | '/dashboard' | '/events' | '/sky' | '/weather'
+  fullPaths:
+    | '/'
+    | '/ai'
+    | '/dashboard'
+    | '/events'
+    | '/sky'
+    | '/weather'
+    | '/satellite/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/ai' | '/dashboard' | '/events' | '/sky' | '/weather'
-  id: '__root__' | '/' | '/ai' | '/dashboard' | '/events' | '/sky' | '/weather'
+  to:
+    | '/'
+    | '/ai'
+    | '/dashboard'
+    | '/events'
+    | '/sky'
+    | '/weather'
+    | '/satellite/$id'
+  id:
+    | '__root__'
+    | '/'
+    | '/ai'
+    | '/dashboard'
+    | '/events'
+    | '/sky'
+    | '/weather'
+    | '/satellite/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -87,6 +118,7 @@ export interface RootRouteChildren {
   EventsRoute: typeof EventsRoute
   SkyRoute: typeof SkyRoute
   WeatherRoute: typeof WeatherRoute
+  SatelliteIdRoute: typeof SatelliteIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -133,6 +165,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/satellite/$id': {
+      id: '/satellite/$id'
+      path: '/satellite/$id'
+      fullPath: '/satellite/$id'
+      preLoaderRoute: typeof SatelliteIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -143,6 +182,7 @@ const rootRouteChildren: RootRouteChildren = {
   EventsRoute: EventsRoute,
   SkyRoute: SkyRoute,
   WeatherRoute: WeatherRoute,
+  SatelliteIdRoute: SatelliteIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
