@@ -22,6 +22,8 @@ export const Route = createFileRoute("/dashboard")({
 const categories = ["All", "Communications", "Earth Observation", "Navigation", "Science", "Crewed", "Military"];
 
 function Dashboard() {
+  const [globeMode, setGlobeMode] = useState<"stylized" | "realistic">("stylized");
+
   return (
     <div className="min-h-screen">
       <Navbar />
