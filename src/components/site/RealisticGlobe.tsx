@@ -1,39 +1,15 @@
 import { useEffect, useRef, useState } from "react";
-import { MapPin, LocateFixed, Plus, Minus } from "lucide-react";
+import { MapPin, LocateFixed, Plus, Minus, RotateCw } from "lucide-react";
 
 type Pin = { lat: number; lng: number; label?: string };
 
-declare global {
-  interface Window {
-    google: any;
-    __initRealisticMap?: () => void;
-  }
-}
+const EARTH_TEXTURES = {
+  satellite: "//unpkg.com/three-globe/example/img/earth-blue-marble.jpg",
+  night: "//unpkg.com/three-globe/example/img/earth-night.jpg",
+  topology: "//unpkg.com/three-globe/example/img/earth-topology.png",
+} as const;
 
-let mapsLoader: Promise<void> | null = null;
-function loadMaps(): Promise<void> {
-  if (typeof window === "undefined") return Promise.reject();
-  if (window.google?.maps) return Promise.resolve();
-  if (mapsLoader) return mapsLoader;
-
-  mapsLoader = new Promise<void>((resolve, reject) => {
-    const key = import.meta.env.VITE_LOVABLE_CONNECTOR_GOOGLE_MAPS_BROWSER_KEY;
-    const channel = import.meta.env.VITE_LOVABLE_CONNECTOR_GOOGLE_MAPS_TRACKING_ID;
-    if (!key) {
-      reject(new Error("Missing Google Maps browser key"));
-      return;
-    }
-    window.__initRealisticMap = () => resolve();
-    const s = document.createElement("script");
-    s.src = `https://maps.googleapis.com/maps/api/js?key=${key}&loading=async&callback=__initRealisticMap${
-      channel ? `&channel=${channel}` : ""
-    }`;
-    s.async = true;
-    s.onerror = () => reject(new Error("Failed to load Google Maps"));
-    document.head.appendChild(s);
-  });
-  return mapsLoader;
-}
+type TextureKey = keyof typeof EARTH_TEXTURES;
 
 export function RealisticGlobe({
   className = "",
@@ -46,124 +22,166 @@ export function RealisticGlobe({
   initialPin?: Pin | null;
   onPinChange?: (p: Pin | null) => void;
 }) {
-  const mapEl = useRef<HTMLDivElement | null>(null);
-  const mapRef = useRef<any>(null);
-  const markerRef = useRef<any>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const globeRef = useRef<any>(null);
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pin, setPin] = useState<Pin | null>(initialPin ?? null);
-  const [mapType, setMapType] = useState<"satellite" | "hybrid" | "terrain">("hybrid");
+  const [texture, setTexture] = useState<TextureKey>("satellite");
+  const [autoRotate, setAutoRotate] = useState(true);
 
+  // Init globe
   useEffect(() => {
     let cancelled = false;
-    loadMaps()
-      .then(() => {
-        if (cancelled || !mapEl.current) return;
-        const g = window.google;
-        const map = new g.maps.Map(mapEl.current, {
-          center: { lat: 20, lng: 0 },
-          zoom: 2,
-          mapTypeId: mapType,
-          tilt: 45,
-          disableDefaultUI: true,
-          zoomControl: false,
-          gestureHandling: "greedy",
-          backgroundColor: "#000814",
-          styles: [],
-        });
-        mapRef.current = map;
+    let globeInstance: any = null;
+
+    (async () => {
+      try {
+        const mod = await import("globe.gl");
+        if (cancelled || !containerRef.current) return;
+        const Globe = (mod as any).default;
+
+        globeInstance = new Globe(containerRef.current)
+          .width(containerRef.current.clientWidth)
+          .height(size)
+          .backgroundColor("rgba(0,0,0,0)")
+          .globeImageUrl(EARTH_TEXTURES[texture])
+          .bumpImageUrl("//unpkg.com/three-globe/example/img/earth-topology.png")
+          .showAtmosphere(true)
+          .atmosphereColor("#4fc3f7")
+          .atmosphereAltitude(0.18)
+          .onGlobeClick((coords: { lat: number; lng: number }) => {
+            const p: Pin = { lat: coords.lat, lng: coords.lng, label: "Pinned Location" };
+            setPin(p);
+            onPinChange?.(p);
+          });
+
+        // Auto-rotate
+        const controls = globeInstance.controls();
+        controls.autoRotate = true;
+        controls.autoRotateSpeed = 0.5;
+        controls.enableZoom = true;
+
+        globeRef.current = globeInstance;
         setReady(true);
+      } catch (e: any) {
+        if (!cancelled) setError(e?.message || "Failed to load 3D globe");
+      }
+    })();
 
-        map.addListener("click", (e: any) => {
-          const lat = e.latLng.lat();
-          const lng = e.latLng.lng();
-          updatePin({ lat, lng, label: "Pinned Location" });
-        });
-
-        if (pin) drawMarker(pin);
-      })
-      .catch((err) => setError(err.message || "Maps failed to load"));
     return () => {
       cancelled = true;
+      try {
+        globeInstance?._destructor?.();
+      } catch {
+        // ignore
+      }
+      globeRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Texture change
   useEffect(() => {
-    if (mapRef.current) mapRef.current.setMapTypeId(mapType);
-  }, [mapType]);
+    if (globeRef.current) globeRef.current.globeImageUrl(EARTH_TEXTURES[texture]);
+  }, [texture]);
 
-  const drawMarker = (p: Pin) => {
-    const g = window.google;
-    if (!g || !mapRef.current) return;
-    if (markerRef.current) markerRef.current.setMap(null);
-    markerRef.current = new g.maps.Marker({
-      position: { lat: p.lat, lng: p.lng },
-      map: mapRef.current,
-      title: p.label || "Pin",
-      animation: g.maps.Animation.DROP,
+  // Auto-rotate change
+  useEffect(() => {
+    const c = globeRef.current?.controls();
+    if (c) c.autoRotate = autoRotate;
+  }, [autoRotate]);
+
+  // Update pin marker
+  useEffect(() => {
+    if (!globeRef.current) return;
+    const points = pin
+      ? [{ lat: pin.lat, lng: pin.lng, size: 0.6, color: "#ff3b5c", label: pin.label }]
+      : [];
+    globeRef.current
+      .htmlElementsData(points)
+      .htmlLat((d: any) => d.lat)
+      .htmlLng((d: any) => d.lng)
+      .htmlAltitude(0.01)
+      .htmlElement((d: any) => {
+        const el = document.createElement("div");
+        el.innerHTML = `
+          <div style="position:relative;transform:translate(-50%,-100%);pointer-events:none;">
+            <div style="width:14px;height:14px;border-radius:50%;background:#ff3b5c;box-shadow:0 0 0 4px rgba(255,59,92,0.35),0 0 20px rgba(255,59,92,0.8);position:absolute;left:-7px;top:-7px;animation:pulse 1.6s ease-out infinite;"></div>
+            <svg viewBox="0 0 24 24" width="22" height="22" style="position:absolute;left:-11px;top:-22px;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.6));">
+              <path d="M12 2 C7 2 4 5.5 4 9.5 C4 15 12 22 12 22 C12 22 20 15 20 9.5 C20 5.5 17 2 12 2 Z" fill="#ff3b5c" stroke="#fff" stroke-width="1.4"/>
+              <circle cx="12" cy="9.5" r="3" fill="#fff"/>
+            </svg>
+          </div>
+          <style>@keyframes pulse{0%{transform:scale(0.6);opacity:1}100%{transform:scale(2.4);opacity:0}}</style>
+        `;
+        return el;
+      });
+  }, [pin]);
+
+  // Resize handling
+  useEffect(() => {
+    if (!containerRef.current || !globeRef.current) return;
+    const obs = new ResizeObserver(() => {
+      const w = containerRef.current?.clientWidth || size;
+      globeRef.current?.width(w).height(size);
     });
-  };
-
-  const updatePin = (p: Pin | null) => {
-    setPin(p);
-    onPinChange?.(p);
-    if (p) drawMarker(p);
-    else if (markerRef.current) {
-      markerRef.current.setMap(null);
-      markerRef.current = null;
-    }
-  };
+    obs.observe(containerRef.current);
+    return () => obs.disconnect();
+  }, [size, ready]);
 
   const useMyLocation = () => {
     if (!navigator.geolocation) return;
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         const p = { lat: pos.coords.latitude, lng: pos.coords.longitude, label: "My Location" };
-        updatePin(p);
-        mapRef.current?.panTo({ lat: p.lat, lng: p.lng });
-        mapRef.current?.setZoom(8);
+        setPin(p);
+        onPinChange?.(p);
+        globeRef.current?.pointOfView({ lat: p.lat, lng: p.lng, altitude: 1.6 }, 1200);
       },
       () => {
         const p = { lat: 37.7749, lng: -122.4194, label: "My Location (default)" };
-        updatePin(p);
-        mapRef.current?.panTo({ lat: p.lat, lng: p.lng });
-        mapRef.current?.setZoom(8);
+        setPin(p);
+        onPinChange?.(p);
+        globeRef.current?.pointOfView({ lat: p.lat, lng: p.lng, altitude: 1.6 }, 1200);
       }
     );
   };
 
-  const zoom = (d: number) => {
-    if (!mapRef.current) return;
-    mapRef.current.setZoom((mapRef.current.getZoom() || 2) + d);
+  const zoom = (factor: number) => {
+    const g = globeRef.current;
+    if (!g) return;
+    const pov = g.pointOfView();
+    g.pointOfView({ ...pov, altitude: Math.max(0.3, Math.min(4, pov.altitude * factor)) }, 400);
   };
 
   return (
-    <div className={`relative overflow-hidden rounded-xl border border-border ${className}`} style={{ height: size }}>
-      <div ref={mapEl} className="absolute inset-0" />
+    <div
+      className={`relative overflow-hidden rounded-xl border border-border ${className}`}
+      style={{ height: size, background: "radial-gradient(circle at 50% 50%, #0a1428 0%, #000814 70%)" }}
+    >
+      <div ref={containerRef} className="absolute inset-0" />
 
       {!ready && !error && (
-        <div className="absolute inset-0 grid place-items-center bg-background/80 text-xs text-muted-foreground">
+        <div className="absolute inset-0 grid place-items-center text-xs text-muted-foreground">
           <div className="flex flex-col items-center gap-2">
             <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-            Loading realistic globe…
+            Loading 3D Earth…
           </div>
         </div>
       )}
       {error && (
-        <div className="absolute inset-0 grid place-items-center bg-background/80 p-4 text-center text-xs text-danger">
-          {error}
-        </div>
+        <div className="absolute inset-0 grid place-items-center p-4 text-center text-xs text-danger">{error}</div>
       )}
 
-      {/* Map type selector */}
+      {/* Texture selector */}
       <div className="absolute left-3 top-3 flex gap-1 rounded-md border border-border bg-background/70 p-1 backdrop-blur">
-        {(["hybrid", "satellite", "terrain"] as const).map((t) => (
+        {(Object.keys(EARTH_TEXTURES) as TextureKey[]).map((t) => (
           <button
             key={t}
-            onClick={() => setMapType(t)}
+            onClick={() => setTexture(t)}
             className={`rounded px-2 py-1 text-[10px] uppercase tracking-widest ${
-              mapType === t ? "bg-primary text-background" : "text-muted-foreground hover:text-foreground"
+              texture === t ? "bg-primary text-background" : "text-muted-foreground hover:text-foreground"
             }`}
           >
             {t}
@@ -181,20 +199,34 @@ export function RealisticGlobe({
           <LocateFixed className="h-3.5 w-3.5" />
         </button>
         <button
-          onClick={() => zoom(1)}
+          onClick={() => setAutoRotate((r) => !r)}
+          title={autoRotate ? "Pause rotation" : "Auto-rotate"}
+          className={`grid h-8 w-8 place-items-center rounded-md border bg-background/70 backdrop-blur hover:bg-primary/10 ${
+            autoRotate ? "border-primary text-primary" : "border-border text-muted-foreground"
+          }`}
+        >
+          <RotateCw className="h-3.5 w-3.5" />
+        </button>
+        <button
+          onClick={() => zoom(0.7)}
+          title="Zoom in"
           className="grid h-8 w-8 place-items-center rounded-md border border-border bg-background/70 text-foreground backdrop-blur hover:bg-primary/10"
         >
           <Plus className="h-3.5 w-3.5" />
         </button>
         <button
-          onClick={() => zoom(-1)}
+          onClick={() => zoom(1.4)}
+          title="Zoom out"
           className="grid h-8 w-8 place-items-center rounded-md border border-border bg-background/70 text-foreground backdrop-blur hover:bg-primary/10"
         >
           <Minus className="h-3.5 w-3.5" />
         </button>
         {pin && (
           <button
-            onClick={() => updatePin(null)}
+            onClick={() => {
+              setPin(null);
+              onPinChange?.(null);
+            }}
             title="Clear pin"
             className="grid h-8 w-8 place-items-center rounded-md border border-border bg-background/70 text-danger backdrop-blur hover:border-danger"
           >
