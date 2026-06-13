@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { MapPin, LocateFixed, RotateCw } from "lucide-react";
+import { MapPin, LocateFixed, RotateCw, Plus, Minus } from "lucide-react";
 import { satellites } from "@/lib/mock-data";
 
 type Pin = { lat: number; lng: number; label?: string };
