@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { MapPin, LocateFixed, RotateCw } from "lucide-react";
+import { MapPin, LocateFixed, RotateCw, Plus, Minus } from "lucide-react";
 import { satellites } from "@/lib/mock-data";
 
 type Pin = { lat: number; lng: number; label?: string };
@@ -60,7 +60,9 @@ export function GlobeViz({
 }: Props) {
   const cx = size / 2;
   const cy = size / 2;
-  const r = size * 0.32;
+  const [zoom, setZoom] = useState(1);
+  const r = size * 0.32 * zoom;
+
 
   const svgRef = useRef<SVGSVGElement | null>(null);
   const [rotLng, setRotLng] = useState(20);
@@ -169,6 +171,12 @@ export function GlobeViz({
           drag.current = null;
           setHover(null);
         }}
+        onWheel={(e) => {
+          if (!interactive) return;
+          const dz = e.deltaY < 0 ? 1.1 : 1 / 1.1;
+          setZoom((z) => Math.max(0.6, Math.min(2.6, z * dz)));
+        }}
+
       >
         <defs>
           <radialGradient id="earth-grad" cx="35%" cy="35%" r="75%">
@@ -312,6 +320,21 @@ export function GlobeViz({
             >
               <RotateCw className="h-3.5 w-3.5" />
             </button>
+            <button
+              onClick={() => setZoom((z) => Math.min(2.6, z * 1.2))}
+              title="Zoom in"
+              className="pointer-events-auto grid h-8 w-8 place-items-center rounded-md border border-border bg-background/60 text-foreground backdrop-blur hover:bg-primary/10"
+            >
+              <Plus className="h-3.5 w-3.5" />
+            </button>
+            <button
+              onClick={() => setZoom((z) => Math.max(0.6, z / 1.2))}
+              title="Zoom out"
+              className="pointer-events-auto grid h-8 w-8 place-items-center rounded-md border border-border bg-background/60 text-foreground backdrop-blur hover:bg-primary/10"
+            >
+              <Minus className="h-3.5 w-3.5" />
+            </button>
+
             {pin && (
               <button
                 onClick={() => setPin(null)}
