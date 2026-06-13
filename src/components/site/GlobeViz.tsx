@@ -60,7 +60,9 @@ export function GlobeViz({
 }: Props) {
   const cx = size / 2;
   const cy = size / 2;
-  const r = size * 0.32;
+  const [zoom, setZoom] = useState(1);
+  const r = size * 0.32 * zoom;
+
 
   const svgRef = useRef<SVGSVGElement | null>(null);
   const [rotLng, setRotLng] = useState(20);
