@@ -320,6 +320,21 @@ export function GlobeViz({
             >
               <RotateCw className="h-3.5 w-3.5" />
             </button>
+            <button
+              onClick={() => setZoom((z) => Math.min(2.6, z * 1.2))}
+              title="Zoom in"
+              className="pointer-events-auto grid h-8 w-8 place-items-center rounded-md border border-border bg-background/60 text-foreground backdrop-blur hover:bg-primary/10"
+            >
+              <Plus className="h-3.5 w-3.5" />
+            </button>
+            <button
+              onClick={() => setZoom((z) => Math.max(0.6, z / 1.2))}
+              title="Zoom out"
+              className="pointer-events-auto grid h-8 w-8 place-items-center rounded-md border border-border bg-background/60 text-foreground backdrop-blur hover:bg-primary/10"
+            >
+              <Minus className="h-3.5 w-3.5" />
+            </button>
+
             {pin && (
               <button
                 onClick={() => setPin(null)}
