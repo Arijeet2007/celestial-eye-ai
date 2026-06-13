@@ -171,6 +171,12 @@ export function GlobeViz({
           drag.current = null;
           setHover(null);
         }}
+        onWheel={(e) => {
+          if (!interactive) return;
+          const dz = e.deltaY < 0 ? 1.1 : 1 / 1.1;
+          setZoom((z) => Math.max(0.6, Math.min(2.6, z * dz)));
+        }}
+
       >
         <defs>
           <radialGradient id="earth-grad" cx="35%" cy="35%" r="75%">
