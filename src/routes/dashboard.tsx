@@ -1,10 +1,13 @@
+import { useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Search, Satellite as SatIcon, Orbit, Radio, AlertTriangle, Plus, Maximize2, ZoomIn, ZoomOut, Pause } from "lucide-react";
+import { Search, Satellite as SatIcon, Orbit, Radio, AlertTriangle, Plus } from "lucide-react";
 import { Navbar } from "@/components/site/Navbar";
 import { GlobeViz } from "@/components/site/GlobeViz";
+import { RealisticGlobe } from "@/components/site/RealisticGlobe";
 import { StarField } from "@/components/site/StarField";
 import { AIChat } from "@/components/site/AIChat";
 import { satellites, issPosition, spaceWeather, upcomingEvents, stats } from "@/lib/mock-data";
+
 
 export const Route = createFileRoute("/dashboard")({
   head: () => ({
