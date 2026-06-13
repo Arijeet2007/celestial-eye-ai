@@ -120,20 +120,37 @@ function Dashboard() {
             <div className="relative flex items-center justify-between border-b border-border px-4 py-3">
               <div className="flex items-center gap-3">
                 <span className="grid h-2 w-2 animate-pulse rounded-full bg-success" />
-                <span className="font-mono text-xs uppercase tracking-widest">Real-time orbital view</span>
+                <span className="font-mono text-xs uppercase tracking-widest">
+                  {globeMode === "stylized" ? "Real-time orbital view" : "Realistic earth view"}
+                </span>
               </div>
-              <div className="flex items-center gap-1">
-                {[ZoomIn, ZoomOut, Pause, Maximize2].map((I, i) => (
-                  <button key={i} className="grid h-8 w-8 place-items-center rounded-md border border-border text-muted-foreground hover:border-primary hover:text-primary">
-                    <I className="h-3.5 w-3.5" />
+              <div className="flex rounded-md border border-border bg-background/40 p-0.5">
+                {(["stylized", "realistic"] as const).map((m) => (
+                  <button
+                    key={m}
+                    onClick={() => setGlobeMode(m)}
+                    className={`rounded px-3 py-1 text-[10px] uppercase tracking-widest transition ${
+                      globeMode === m
+                        ? "bg-primary text-background"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {m}
                   </button>
                 ))}
               </div>
             </div>
 
-            <div className="relative grid place-items-center py-10 sm:py-16">
-              <GlobeViz size={520} />
-            </div>
+            {globeMode === "stylized" ? (
+              <div className="relative grid place-items-center py-10 sm:py-16">
+                <GlobeViz size={520} />
+              </div>
+            ) : (
+              <div className="relative p-4">
+                <RealisticGlobe size={520} />
+              </div>
+            )}
+
 
             <div className="relative grid grid-cols-2 gap-px border-t border-border bg-border/50 sm:grid-cols-4">
               {[
